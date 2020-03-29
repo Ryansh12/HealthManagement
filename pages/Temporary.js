@@ -1,20 +1,17 @@
 import React, { Component } from 'react';
 import Layout from '../components/layout';
 import axios from 'axios';
-import web3 from '../ethereum/web3';
-
 import validator from 'validator';
+import web3 from '../ethereum/web3';
 import doctor from '../ethereum/build/Doctor';
-import medRec from '../ethereum/build/MedicalRecord';
-import addMap from '../ethereum/build/AddressMapping';
-import { Form, Input, Image, Modal, Progress, Header, Message, Icon, Label, Button, Grid, Dropdown, Divider, Segment } from 'semantic-ui-react';
+import { Form, Input, Image, Progress, Header, Message, Icon, Label, Button, Grid, Dropdown, Divider, Segment } from 'semantic-ui-react';
 
 export default class MedicalRecordForm extends Component {
     constructor(props) {
         super(props);
         this.state = { name: '', nameError:  false, gender: '', genderError:  false, dob: '', dobError:  false, mobile: '', mobileError:  false, aadhar: '', aadharError:  false, paddress: '', paddressError:  false,
         postalcode: '', postalcodeError:  false, country: '', countryError:  false, password: '', passwordError: false, medicalHistory: '', medicalHistoryError:  false, diagnosis: '', diagnosisError:  false, medications: '', medicationsError:  false, allergies: '', allergiesError:  false, progressNotes: '', progressNotesError:  false, vitalSigns: '', vitalSignsError:  false, immunizationDates: '', immunizationDatesError:  false,
-        emergency: '', emergencyError:  false, billingData: '', radiologyImages: '', labResults: '', createNewMedicalRecordErrorMessage: '', updateNonDemographicDataErrorMessage: '', uploadFilesErrorMessage: '', selectedFile: null, billingDataLoad: false, radiologyImagesLoad: false, labResultsLoad: false, createNewMedicalRecordLoading: false, updateFilesLoading: false, updateNonDemographicDataLoading: false, isModalOpen: true, modalContent: '', modalHeader: '', modalIconColor: 'red', modalIconName: 'clock', medInfAadhar:'', fileAadhar: '', medInfAadharError: false, fileAadharError: false};
+        emergency: '', emergencyError:  false, billingData: '', radiologyImages: '', labResults: '', errorMessage: '', selectedFile: null, billingDataLoad: false, radiologyImagesLoad: false, labResultsLoad: false, createNewMedicalRecordLoading: false, updateFilesLoading: false, updateNonDemographicDataLoading: false };
         this.genderOptions = [
             { key: 'male', text: 'Male', value: 'Male' },
             { key: 'female', text: 'Female', value: 'Female' },
@@ -171,7 +168,7 @@ export default class MedicalRecordForm extends Component {
         }
     }
 
-    createNewMedicalRecord = async (event) => {
+    onFormSubmit = async event => {
         event.preventDefault();
 
         let errorFlag = false;
@@ -232,81 +229,6 @@ export default class MedicalRecordForm extends Component {
             this.setState( { countryError:  false } )
         }
 
-        if( (!this.state.password.match(/^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])(?=.{8,})/)) ||  (validator.isEmpty(this.state.password))) {
-            this.setState( { passwordError: 'Password must contain 1 lowercase, 1 uppercase, 1 numeric, 1 special char and length greater than 7' } );
-            errorFlag=true;
-        }else {
-            this.setState( { passwordError:  false } )
-        }
-
-
-        let flag = true
-        if(flag) {
-            this.setState({ createNewMedicalRecordLoading: true, createNewMedicalRecordErrorMessage: 'sanket' });
-            let accounts = await web3.eth.getAccounts();
-            let isDoctor, medRecAdd, output;
-
-            try {
-                const address = new web3.eth.Contract(addMap.abi, '0xA0Ca43D1AF9d4B5471a19E922690118ACf9588c5');
-                medRecAdd = await address.methods.getRecordAddress(this.state.medInfAadhar).call();
-                console.log('1');
-            } catch (err) {
-                this.setState({ createNewMedicalRecordErrorMessage: err.message });
-            }
-
-            if(medRecAdd != 0x0000000000000000000000000000000000000000) {
-                this.setState( { modalHeader: 'Error', modalContent: 'Record Already Exists', modalIconColor: 'red', modalIconName: 'cancel', isModalOpen: true } )
-                return;
-            }
-            else {
-            console.log('2');
-
-                try {
-                    const address1 = new web3.eth.Contract(doctor.abi, '0xE34AFD25c1D10e6b4eb532aC0C2E7Bb4BB78B03b');
-                    console.log(accounts[0]);
-                    isDoctor = await address1.methods.isDoctor(accounts[0]).call();
-                } catch (err) {
-                    this.setState({ createNewMedicalRecordErrorMessage: err.message });
-                }
-            }
-
-            if(!isDoctor) {
-                this.setState( { modalHeader: 'Error', modalContent: 'You Are Not Authorized', modalIconColor: 'red', modalIconName: 'cancel', isModalOpen: true } )
-                return;
-            }
-            else {
-                try {
-                    const accounts = await web3.eth.getAccounts();
-                    const address2 = new web3.eth.Contract(doctor.abi, '0xE34AFD25c1D10e6b4eb532aC0C2E7Bb4BB78B03b');
-                    console.log(accounts[0] + '/n' + 'asdasdsad');
-                    let output = await address2.methods
-                    .createMedicalRecord(this.state.name, this.state.gender, this.state.dob, this.state.mobile, this.state.aadhar, this.state.paddress,
-                        this.state.postalcode, this.state.country, this.state.password)
-                    .send({
-                        from: accounts[0], gas: '9999999'
-                    });
-                    console.log('zzzzzzzzzzzzzzz');
-                    console.log(output);
-                } catch (err) {
-                    this.setState({ createNewMedicalRecordErrorMessage: err.message });
-                }
-            }
-        }
-        this.setState({ loading: false });
-    }
-
-    updateNonDemographicData = async (event) => {
-        event.preventDefault();
-
-        let errorFlag = false;
-
-        if( (!validator.isNumeric(this.state.medInfAadhar)) ||  (validator.isEmpty(this.state.medInfAadhar)) || (this.state.medInfAadhar.length != 12)) {
-            this.setState( { medInfAadharError: 'Enter Correct Aadhar Number' } );
-            errorFlag=true;
-        }else {
-            this.setState( { medInfAadharError:  false } )
-        }
-
         if( (validator.isEmpty(this.state.medicalHistory)) || (!this.state.medicalHistory.length < 10) ) {
             this.setState( { medicalHistoryError: 'Enter Medical History' } );
             errorFlag=true;
@@ -363,142 +285,44 @@ export default class MedicalRecordForm extends Component {
             this.setState( { emergencyError:  false } )
         }
 
-        let ff = true;
-        if(ff) {
-            this.setState({ updateNonDemographicDataLoading: true, updateNonDemographicDataErrorMessage: 'sanket' });
-            let accounts = await web3.eth.getAccounts();
-            let isDoctorAllowed, medRecAdd, output;
-
-            try {
-                const address = new web3.eth.Contract(addMap.abi, '0xA0Ca43D1AF9d4B5471a19E922690118ACf9588c5');
-                medRecAdd = await address.methods.getRecordAddress(this.state.medInfAadhar).call();
-                console.log('1');
-            } catch (err) {
-                this.setState({ updateNonDemographicData: err.message });
-            }
-
-            if(medRecAdd == 0x0000000000000000000000000000000000000000) {
-                this.setState( { modalHeader: 'Error', modalContent: 'No Record Exists', modalIconColor: 'red', modalIconName: 'cancel', isModalOpen: true } )
-                return;
-            }
-            else {
-            console.log('2');
-
-                try {
-                    const address1 = new web3.eth.Contract(medRec.abi, medRecAdd);
-                    console.log(accounts[0]);
-                    isDoctorAllowed = await address1.methods.isDoctorAllowed(accounts[0]).call();
-                } catch (err) {
-                    this.setState({ updateNonDemographicData: err.message });
-                }
-
-                if(isDoctorAllowed == false) {
-                    this.setState( { modalHeader: 'Error', modalContent: 'You Are Not Authorized', modalIconColor: 'red', modalIconName: 'cancel', isModalOpen: true } )
-                }
-                else {
-            console.log('3');
-            console.log(medRecAdd);
-
-                    try {
-                        const address2 = new web3.eth.Contract(medRec.abi, medRecAdd);
-                        console.log(accounts[0] + '/n' + 'asdasdsad');
-                        output = await address2.methods
-                        .updateNondemographics(this.state.medicalHistory, this.state.diagnosis, this.state.medications, this.state.allergies, this.state.progressNotes, this.state.vitalSigns,
-                            this.state.immunizationDates, this.state.emergency)
-                        .send({
-                            from: accounts[0], gas: '9999999'
-                        });
-                    } catch (err) {
-                        this.setState({ updateNonDemographicData: err.message });
-                    }
-                }
-            }
-        }
-        this.setState({ updateNonDemographicDataLoading: false });
-    }
-
-    updateFiles = async (event) => {
-        event.preventDefault();
-
-        let errorFlag = false;
-
-        if( (!validator.isNumeric(this.state.fileAadhar)) ||  (validator.isEmpty(this.state.fileAadhar)) || (this.state.fileAadhar.length != 12)) {
-            this.setState( { fileAadharError: 'Enter Correct Aadhar Number' } );
+        if( (!this.state.password.match(/^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])(?=.{8,})/)) ||  (validator.isEmpty(this.state.password))) {
+            this.setState( { passwordError: 'Password must contain 1 lowercase, 1 uppercase, 1 numeric, 1 special char and length greater than 7' } );
             errorFlag=true;
         }else {
-            this.setState( { fileAadharError:  false } )
+            this.setState( { passwordError:  false } )
         }
 
-        let ff = true;
-        if(ff) {
-            this.setState({ updateNonDemographicDataLoading: true, updateNonDemographicDataErrorMessage: 'sanket' });
-            let accounts = await web3.eth.getAccounts();
-            let isDoctorAllowed, output;
-
-            console.log('2');
+        if( !errorFlag ) {
+            console.log("eeeeeeeeee");
+            this.setState({ loading: true, errorMessage: '' });
 
             try {
-                const address1 = new web3.eth.Contract(medRec.abi, medRecAdd);
-                console.log(accounts[0]);
-                isDoctorAllowed = await address1.methods.isDoctorAllowed(accounts[0]).call();
+            console.log("eeeeeeeeeetttttttttttttttt");
+                const accounts = await web3.eth.getAccounts();
+                const address = new web3.eth.Contract(doctor.abi, '0x7535a91cFB4ac53Aac459CC911A2064ca271dA0e');
+                console.log(this.state.aadhar);
+                let output = await address.methods
+                .createMedicalRecord(this.state.name, this.state.gender, this.state.dob, this.state.mobile, this.state.aadhar, this.state.paddress,
+                    this.state.postalcode, this.state.country, this.state.password)
+                .send({
+                    from: accounts[0]
+                });
+                console.log(output);
+
             } catch (err) {
-                this.setState({ updateNonDemographicData: err.message });
-            }
-
-            if(isDoctorAllowed == false) {
-                this.setState( { modalHeader: 'Error', modalContent: 'You Are Not Authorized', modalIconColor: 'red', modalIconName: 'cancel', isModalOpen: true } )
-            }
-            else {
-            console.log('3');
-            console.log(medRecAdd);
-
-                    try {
-                        const address2 = new web3.eth.Contract(medRec.abi, medRecAdd);
-                        console.log(accounts[0] + '/n' + 'asdasdsad');
-                        //FIXME: the fourth parameter
-                        output = await address2.methods
-                        .addFiles(this.state.billingData, this.state.radiologyImages, this.state.labResults, 'sfdfd')
-                        .send({
-                            from: accounts[0], gas: '9999999'
-                        });
-                    } catch (err) {
-                        this.setState({ updateNonDemographicData: err.message });
-                    }
+                this.setState({ errorMessage: err.message });
             }
         }
-        this.setState({ updateNonDemographicDataLoading: false });
-    }
-
-    genderOnChange = (e, data) => {
-        console.log(data.value);
-        this.setState({ gender: data.value });
-    }
-
-    countryOnChange = (e, data) => {
-        console.log(data.value);
-        this.setState({ country: data.value });
-    }
-
-    modalTopple = () => {
-        alert('asdasd');
-        this.setState({ isModalOpen: !this.state.isModalOpen });
-    }
+        this.setState({ loading: false });
+    };
 
     render() {
         return (
-            <Layout>
-                <Modal open={this.state.isModalOpen} inverted>
-                    <Header><Icon color={ this.state.modalIconColor } name={ this.state.modalIconName } size='big'/>{ this.state.modalHeader }</Header>
-                    <Modal.Content>{ this.state.modalContent }</Modal.Content>
-                    <Modal.Actions>
-                        <Button color='blue' onClick={this.modalTopple} inverted>
-                        <Icon name='checkmark' /> Ok
-                        </Button>
-                    </Modal.Actions>
-                </Modal>
+            <div>
                 <Grid stackable textAlign='left' style={ { marginLeft: '2px' } } verticalAlign='top' columns={1}>
                     <Grid.Column>
                         <Header color= 'grey' size='huge' as='h1' textAlign='center' style={ { fontSize: '40px', fontFamily: '"Arial Black", Gadget, sans-serif', marginTop: '45px', color: 'white' } }>Electronic Health Record</Header>
+        
                         <Divider horizontal>
                             <Header as='h4' color='grey'>
                                 Patient Demographics
@@ -507,6 +331,7 @@ export default class MedicalRecordForm extends Component {
                         <Form onSubmit={this.createNewMedicalRecord} inverted error={!!this.state.errorMessage}>
                         <label style={ { color: '#808080' } }>Patient Name</label>
                         <Form.Input
+                            required
                             fluid
                             value={this.state.name}
                             onChange={event =>
@@ -523,7 +348,8 @@ export default class MedicalRecordForm extends Component {
                                     fluid
                                     selection
                                     options={this.genderOptions}
-                                    onChange={this.genderOnChange}
+                                    onChange={event =>
+                                    this.setState({ gender: event.target.value })}
                                 />
                             </Form.Field>
                             <Form.Field>
@@ -582,7 +408,9 @@ export default class MedicalRecordForm extends Component {
                                     fluid
                                     selection
                                     options={this.countryOptions}
-                                    onChange={this.countryOnChange}
+                                    search
+                                    onChange={event =>
+                                    this.setState({ country: event.target.value })}
                                 />
                             </Form.Field>
                         </Form.Group>
@@ -597,10 +425,8 @@ export default class MedicalRecordForm extends Component {
                                     error={this.state.passwordError}
                                 />
                         </Form.Field>
-                        <Message hidden={!this.state.createNewMedicalRecordErrorMessage.length != 0} header="Oops!" content={this.state.createNewMedicalRecordErrorMessage} />
                         <Button
                             type='submit'
-                            disabled={this.state.createNewMedicalRecordLoading}
                             loading={this.state.createNewMedicalRecordLoading}
                             content='Create Contract'
                             primary
@@ -612,17 +438,6 @@ export default class MedicalRecordForm extends Component {
                             </Header>
                         </Divider>
                         <Form onSubmit={this.updateNonDemographicData} inverted error={!!this.state.errorMessage}>
-                            <Form.Field>
-                                <label style={ { color: '#808080' } }>Aadhar</label>
-                                <Form.Input
-                                    fluid
-                                    value={this.state.medInfAadhar}
-                                    onChange={event =>
-                                    this.setState({ medInfAadhar: event.target.value })}
-                                    placeholder='Aadhar'
-                                    error={this.state.medInfAadharError}
-                                />
-                            </Form.Field>
                             <label style={ { color: '#808080' } }>Medical History</label>
                             <Form.TextArea error={this.state.medicalHistoryError}  value={this.state.medicalHistory} onChange={event => this.setState({ medicalHistory: event.target.value })}   placeholder='Medical History...' />
                             <label style={ { color: '#808080' } }>Diagnosis</label>
@@ -639,10 +454,8 @@ export default class MedicalRecordForm extends Component {
                             <Form.TextArea error={this.state.immunizationDatesError} value={this.state.immunizationDates} onChange={event => this.setState({ immunizationDates: event.target.value })}  placeholder='Immunization Dates...' />
                             <label style={ { color: '#808080' } }>Emergency</label>
                             <Form.TextArea error={this.state.emergencyError} value={this.state.emergency} onChange={event => this.setState({ emergency: event.target.value })}   placeholder='Emergency...' />
-                            <Message hidden={!this.state.updateNonDemographicDataErrorMessage.length != 0} header="Oops!" content={this.state.updateNonDemographicDataErrorMessage} />
                             <Button
                                 type='submit'
-                                disabled={this.state.updateNonDemographicDataLoading}
                                 loading={this.state.updateNonDemographicDataLoading}
                                 content='Upload NonDemographics Data'
                                 primary
@@ -653,18 +466,7 @@ export default class MedicalRecordForm extends Component {
                             Files
                         </Header>
                         </Divider>
-                        <Form onSubmit={this.updateFiles} inverted error={!!this.state.errorMessage}>
-                        <Form.Field>
-                            <label style={ { color: '#808080' } }>Aadhar</label>
-                            <Form.Input
-                                fluid
-                                value={this.state.fileAadhar}
-                                onChange={event =>
-                                this.setState({ fileAadhar: event.target.value })}
-                                placeholder='Aadhar'
-                                error={this.state.fileAadharError}
-                            />
-                        </Form.Field>
+                    <Form onSubmit={this.updateFiles} inverted error={!!this.state.errorMessage}>
                         <Form.Field>
                             <label style={ { color: '#808080' } }>Billing</label>
                             <Input
@@ -767,18 +569,16 @@ export default class MedicalRecordForm extends Component {
                         <Progress progress success percent={this.state.labresultsLoadedPercent} >
                                 success
                         </Progress>
-                        <Message error header="Oops!" content={this.state.uploadFilesErrorMessage} />
                         <Button
                             type='submit'
                             loading={this.state.updateFilesLoading}
-                            disabled={this.state.updateFilesLoading}
                             content='Upload Files'
                             primary
                         />
                     </Form>
                     </Grid.Column>
                 </Grid>
-            </Layout>
+            </div>
         )
     }
 }
