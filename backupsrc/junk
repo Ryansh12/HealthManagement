@@ -1,0 +1,9 @@
+
+                    <Label icon='hourglass end' as='a' color='teal' tag>
+                        <Icon disabled name='hourglass end' color='white' />Owner
+                    </Label>
+
+                            this.setState( {
+            deployedAddress: this.props.data[0], owner: this.props.data[1], name: this.props.data[2], aadhar: this.props.data[3], details: this.props.data[4],
+            documents: this.props.data[5], amount: this.props.data[6], requests: this.props.data[7]
+         } );

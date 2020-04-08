@@ -1,0 +1,258 @@
+//server setup
+const express = require( 'express' );
+const routes = require( './routes' );
+const next = require( 'next' );
+const dev = process.env.NODE_ENV !== 'production';
+const app = next( { dev } );
+const handle = routes.getRequestHandler( app );
+
+//file upload
+var multer = require('multer')
+var cors = require('cors');
+
+//file system
+var fs = require('fs');
+
+//file compress
+var archiver = require('archiver');
+
+//file encrypt
+var encryptor = require('file-encryptor');
+
+//ipfs
+const ipfsAPI = require('ipfs-api');
+
+
+//delete folder and all its content
+var deleteFolderRecursive = function(path) {
+    if( fs.existsSync(path) ) {
+      fs.readdirSync(path).forEach(function(file,index){
+        var curPath = path + "/" + file;
+        if(fs.lstatSync(curPath).isDirectory()) { // recurse
+          deleteFolderRecursive(curPath);
+        } else { // delete file
+          fs.unlinkSync(curPath);
+        }
+      });
+      fs.rmdirSync(path);
+    }
+};
+
+//create file directory
+const createDir = ( dirPath ) => {
+    fs.mkdirSync( dirPath, { recursive: true }, ( error ) => { 
+        if ( error ) {
+            console.error( 'An error occurred:', error );
+        } else {
+            console.log( 'Your directory is made!' );
+        }
+     } );
+}
+
+//file upload
+let newPathForStorage;
+var storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, newPathForStorage )
+    },
+    filename: function (req, file, cb) {
+      cb(null, Date.now() + '-' +file.originalname )
+    }
+})
+
+var upload = multer({ storage: storage }).array('file');
+
+
+app.prepare()
+.then( () => {
+    const server = express()
+    server.use(cors())
+
+    //file upload
+    server.post('/upload',function(req, res) {
+      let now = Date.now();
+      newPathForStorage = 'public/' + now;
+      new Promise(function(resolve, reject) {
+        async function f() {
+          createDir( newPathForStorage )
+          console.log('$$$$$$$$$$$$$$$$$$$$')
+          let promise1 = new Promise((resolve, reject) => {
+            upload(req, res, function (err) {
+     
+              if (err instanceof multer.MulterError) {
+                  return res.status(500).json(err)
+                // A Multer error occurred when uploading.
+              } else if (err) {
+                  return res.status(500).json(err)
+                // An unknown error occurred when uploading.
+              } 
+              
+              resolve('Done');
+              // Everything went fine.
+            })
+          })
+          console.log('^^^^^^^^^^^^^^^^^^^^^^')
+          await promise1;
+        }
+        f();
+        resolve('Done');
+      }).then(function(result) { // (**)
+        console.log('+++++++++++++++++')
+        fs.readdirSync(newPathForStorage).forEach(function(file,index){
+          console.log('--------------------------')
+          console.log(index + '    ' + file)
+         
+            console.log(';;;;;;;;;;;;;;;;;;;;;;;;;;;')
+            var curPath = newPathForStorage + "/" + file;
+            //archive.append(fs.createReadStream(curPath), { name: file });
+          
+        });
+
+        async function f1() {
+          let promise2 = new Promise((resolve, reject) => {
+
+            resolve('Done');
+          })
+          await promise2;
+        }
+        f1();
+        return result;
+
+      }).then(function(result) { // (***)
+        async function f3() {
+          let promise3 = new Promise((resolve, reject) => {
+            //= Encrypt file.
+            var key = 'My Super Secret Key';
+            console.log( '&&&&&&&&&&&&&&&&' )
+            encryptor.encryptFile('public/' + now + '/compress/' + now + '.zip', 'public/' + now + '/compress/' + now + '.dat', key, function(err) {
+              // Encryption complete.
+            });
+            resolve('Done');
+          })
+          await promise3;
+        }
+        f3();
+        return 3;
+
+      }).then(function(result) {
+        async function f4() {
+          let promise4 = new Promise((resolve, reject) => {
+            let ipfs = ipfsAPI('ipfs.infura.io', '5001', {protocol: 'https'})
+
+            let testFile = fs.readFileSync( 'public/' + now + '/compress/' + now + '.dat' );
+            let testBuffer = new Buffer(testFile);
+            let fileHash;
+
+            ipfs.files.add(testBuffer, function (err, file) {
+              if (err) {
+                console.log('sadasdsadsadsad');
+                console.log(err);
+              }
+              console.log(file);
+              fileHash = file.map(a => a.hash)[0];
+                console.log(fileHash)
+            })
+            resolve('Done');
+          })
+          await promise4;
+        }
+        f4();
+        return 4;
+      });
+      return res.status(200).send(  );
+    });
+
+
+    //download file
+    server.get( '/download', ( req, res ) => {
+      new Promise(function(resolve, reject) {
+        
+
+        async function f() {
+
+          let promise = new Promise((resolve, reject) => {
+            console.log("333333333333333333333");
+            let now = Date.now();
+            newPathForStorage = 'public/' + now;
+            createDir( newPathForStorage )
+            let ips = ipfsAPI('ipfs.infura.io', '5001', {protocol: 'https'})
+            console.log("9999999999999999999999999999");
+            ips.files.get("QmbFMke1KXqnYyBBWxB74N4c5SBnJMVAiMNRcGu6x1AwQH", function (err, files) {
+              console.log("2222222222222222222");
+              fs.writeFile( newPathForStorage + '/data.dat', files, function(err) {
+                if(err) {
+                    return console.log("}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}");
+                }
+                console.log("The file was saved!");
+              });
+            })
+            resolve("done");
+          });
+        
+          let result = await promise; // wait until the promise resolves (*)
+        }
+        f();
+
+        resolve("done");
+      }).then(function(result) { // (**)
+      
+          //decrypt file
+          var key = 'My Super Secret Key';
+          encryptor.decryptFile( newPathForStorage + '/data.dat', newPathForStorage + '/download.zip', key, function(err) {
+            // Decryption complete
+            if(err){
+              return console.log(err);
+            }
+            else
+            {
+                console.log('success.!');
+            }
+          });
+        console.log('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@');
+        return 1;
+      
+      }).then(function(result) { // (**)
+        console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+        fs.readdirSync(newPathForStorage).forEach(function(file,index){
+          if( file != 'compress' ) {
+            var curPath = newPathForStorage + "/" + file;
+            console.log("444444444444444444444");
+  
+            res.download(fs.createReadStream(curPath), 'user-facing-filename.pdf', (err) => {
+              if (err) {
+                //handle error
+                return
+              } else {
+                //do something
+              }
+            })
+          }
+        });
+        return 3;
+    });
+
+      
+
+
+
+      
+
+
+    })
+
+
+    server.get( '*', ( req, res ) => {
+        return handle( req, res )
+    } )
+
+
+    server.use( handle ).listen( 3000, ( err ) => {
+        if ( err ) throw err
+        console.log( '> Ready on http://localhost:3000' )
+    } )
+
+ } )
+.catch( ( ex ) => {
+    console.error( ex.stack )
+    process.exit( 1 )
+} )

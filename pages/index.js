@@ -1,7 +1,7 @@
-import Layout from '../components/layout';
+// import Layout from '../components/layout';
 import React, { Component } from 'react';
-import { Button, Form, Checkbox, Icon, Segment, Flag, Container } from 'semantic-ui-react';
-import { Link } from '../routes';
+import { Button } from 'semantic-ui-react';
+// import { Link } from '../routes';
 import web3 from '../ethereum/web3';
 import doctor from '../ethereum/build/Owner';
 

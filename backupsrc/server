@@ -26,10 +26,27 @@ var encryptor = require('file-encryptor');
 const ipfsAPI = require('ipfs-api');
 
 
+//encrypt function
+async function encrypt( now ) {
+  var key = 'My Super Secret Key';
+  await encryptor.encryptFile('public/' + now + '/compress/' + now + '.zip', 'public/' + now + '/compress/' + now + '.dat', key, async function(err) {
+    // Encryption complete.
+    const ipfs = ipfsAPI('ipfs.infura.io', '5001', {protocol: 'https'})
 
+    let testFile = fs.readFileSync( 'public/' + now + '/compress/' + now + '.dat' );
+    let testBuffer = new Buffer(testFile);
+    let fileHash;
 
-
-
+    await ipfs.files.add(testBuffer, async function (err, file) {
+      if (err) {
+        console.log(err);
+      }
+      fileHash = file.map(a => a.hash)[0];
+      console.log(fileHash);
+      return fileHash;
+    })
+  });
+}
 
 //ipfs website download
 
@@ -64,7 +81,61 @@ const createDir = ( dirPath ) => {
 
 //compress function
 function compress( now ) {
+  //compress stage
+  //= create a file to stream archive data to.
+  createDir( newPathForStorage + '/compress')
+  var output = fs.createWriteStream( 'public/' + now + '/compress/' + now + '.zip' );
+  var archive = archiver('zip', {
+  zlib: { level: 9 } // Sets the compression level.
+  });
 
+  //= listen for all archive data to be written
+  //= 'close' event is fired only when a file descriptor is involved
+  output.on('close', async function() {
+      console.log(archive.pointer() + ' total bytes');
+      console.log('archiver has been finalized and the output file descriptor has closed.');
+      let output = await encrypt( now );
+      console.log(output + 'sadas');
+      return output;
+  });
+
+  //= This event is fired when the data source is drained no matter what was the data source.
+  //= It is not part of this library but rather from the NodeJS Stream API.
+  //= @see: https://nodejs.org/api/stream.html#stream_event_end
+  output.on('end', function() {
+      encrypt( now );
+      console.log('Data has been drained');
+  });
+
+  //= good practice to catch warnings (ie stat failures and other non-blocking errors)
+  archive.on('warning', function(err) {
+      if (err.code === 'ENOENT') {
+      //= log warning
+      } else {
+      //= throw error
+      throw err;
+      }
+  });
+
+  //= good practice to catch this error explicitly
+  archive.on('error', function(err) {
+      throw err;
+  });
+
+  //= pipe archive data to the file
+  archive.pipe(output);
+
+  fs.readdirSync(newPathForStorage).forEach(function(file,index){
+    console.log( index + '    ' + file );
+    if( file != 'compress' ) {
+      var curPath = newPathForStorage + "/" + file;
+      archive.append(fs.createReadStream(curPath), { name: file });
+    }
+  });
+
+  //= finalize the archive (ie we are done appending files but streams have to finish yet)
+  //= 'close', 'end' or 'finish' may be fired right after calling this method so register to them beforehand
+  archive.finalize();
 }
 
 
@@ -98,8 +169,7 @@ server.post('/new', function( req, res ) {
         newPathForStorage = 'public/' + now;
         createDir( newPathForStorage );
 
-        let up = new Promise((resolve, reject) => {
-          upload(req, res, async function(err) {
+        await upload(req, res, function(err) {
             if (err instanceof multer.MulterError) {
               // A Multer error occurred when uploading.
               return res.status(500).json(err)
@@ -107,102 +177,31 @@ server.post('/new', function( req, res ) {
               // An unknown error occurred when uploading.
               return res.status(500).json(err)
             } else {
-              let compress = new Promise((resolve, reject) => {
-                //compress stage
-                //= create a file to stream archive data to.
-                createDir( newPathForStorage + '/compress')
-                var output = fs.createWriteStream( 'public/' + now + '/compress/' + now + '.zip' );
-                var archive = archiver('zip', {
-                zlib: { level: 9 } // Sets the compression level.
-                });
-            
-                //= listen for all archive data to be written
-                //= 'close' event is fired only when a file descriptor is involved
-                output.on('close', async function() {
-                    console.log(archive.pointer() + ' total bytes');
-                    console.log('archiver has been finalized and the output file descriptor has closed.');
-                    //encrypt function
-                    resolve();
-                });
-            
-                //= This event is fired when the data source is drained no matter what was the data source.
-                //= It is not part of this library but rather from the NodeJS Stream API.
-                //= @see: https://nodejs.org/api/stream.html#stream_event_end
-                output.on('end', function() {
-                    encrypt( now );
-                    console.log('Data has been drained');
-                });
-            
-                //= good practice to catch warnings (ie stat failures and other non-blocking errors)
-                archive.on('warning', function(err) {
-                    if (err.code === 'ENOENT') {
-                    //= log warning
-                    } else {
-                    //= throw error
-                    throw err;
-                    }
-                });
-            
-                //= good practice to catch this error explicitly
-                archive.on('error', function(err) {
-                    throw err;
-                });
-            
-                //= pipe archive data to the file
-                archive.pipe(output);
-            
-                fs.readdirSync(newPathForStorage).forEach(function(file,index){
-                  console.log( index + '    ' + file );
-                  if( file != 'compress' ) {
-                    var curPath = newPathForStorage + "/" + file;
-                    archive.append(fs.createReadStream(curPath), { name: file });
+              new Promise(async function(resolve, reject) {
+                output = await compress( now, function( err ) {
+                  console.log('hhhhhhhhhhhhh')
+                  if (err) {
+
+                  }else {
+                    resolve(1);
+                    console.log('5555555555555555888888888888888');
+                    return res.status(200).send( "zxczxcxzczxcxzc" );
+                    
                   }
-                });
-            
-                //= finalize the archive (ie we are done appending files but streams have to finish yet)
-                //= 'close', 'end' or 'finish' may be fired right after calling this method so register to them beforehand
-                archive.finalize();
+                } );
+              }).then(function(result) {
+                console.log('225555555555555555888888888888888');
+
+                return res.status(200).send( "zxczxcxzczxcxzc" );
               });
-              await compress;
-              let encrypt = new Promise((resolve, reject) => {
-                var key = 'My Super Secret Key';
-                encryptor.encryptFile('public/' + now + '/compress/' + now + '.zip', 'public/' + now + '/compress/' + now + '.dat', key, async function(err) {
-                  // Encryption complete.
-                  const ipfs = ipfsAPI('ipfs.infura.io', '5001', {protocol: 'https'})
-              
-                  let testFile = fs.readFileSync( 'public/' + now + '/compress/' + now + '.dat' );
-                  let testBuffer = new Buffer(testFile);
-                  let fileHash;
-              
-                  ipfs.files.add(testBuffer,function (err, file) {
-                    if (err) {
-                      console.log(err);
-                    }
-                    if(file != null)
-                      fileHash = file.map(a => a.hash)[0];
-                    console.log(fileHash);
-                    resolve(fileHash);
-                  })
-                });
-                ;
-              });
-              output = await encrypt;
-              
-              resolve('Done');
             }
-            console.log('ppppppppsss');
-          })
-        });
-        await up;
-
-
-        return res.status(200).send( output );
-
+            console.log('445555555555555555888888888888888');
+        })
     });
 
-    server.get('/download', function(req, res) {
+    server.get('/download',function(req, res) {
       let now = Date.now();
-      new Promise( async function(resolve, reject) {
+      new Promise(function(resolve, reject) {
         console.log( ' entry' )
 
       newPathForStorage = 'public/' + now;
@@ -228,21 +227,19 @@ server.post('/new', function( req, res ) {
         // });
 
           var file = fs.createWriteStream(newPathForStorage + '/' + now + '.dat');
-          console.log('{{{{{{{{{{{{{{ sanket' + req.query.data);
-          await http.get( 'http://gateway.ipfs.io/ipfs/'.concat(req.query.data), function(response) {
+
+          http.get( 'http://gateway.ipfs.io/ipfs/QmWdAXLk2R4732mJZQEwd5DXYRJJ2DFjqoo1oodsYtgu8N', function(response) {
             response.pipe(file);
             console.log('[[[[[[[[[[[[[[[[[[[[[[[')
             file.on('finish', function() {
               file.close( () => {
-                console.log('Done');
-                resolve( 'Done' );
+                resolve( 'Done' )
               } );
             });
           });
       //})
 
       }).then(function(result) {
-        console.log('Inside');
         var key = 'My Super Secret Key';
         encryptor.decryptFile( newPathForStorage + '/' + now + '.dat', newPathForStorage + '/download.zip', key, function(err) {
           // Decryption complete
@@ -250,6 +247,7 @@ server.post('/new', function( req, res ) {
             return console.log(err);
           } else {
             res.download( newPathForStorage + '/download.zip', 'user-facinname.zip');
+            return result;
           }
         });
       });

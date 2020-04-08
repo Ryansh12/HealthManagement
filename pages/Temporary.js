@@ -1,10 +1,10 @@
 import React, { Component } from 'react';
-import Layout from '../components/layout';
+// import Layout from '../components/layout';
 import axios from 'axios';
 import validator from 'validator';
 import web3 from '../ethereum/web3';
 import doctor from '../ethereum/build/Doctor';
-import { Form, Input, Image, Progress, Header, Message, Icon, Label, Button, Grid, Dropdown, Divider, Segment } from 'semantic-ui-react';
+import { Form, Input,  Progress, Header, Button, Grid, Dropdown, Divider } from 'semantic-ui-react';
 
 export default class MedicalRecordForm extends Component {
     constructor(props) {

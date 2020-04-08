@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import Layout from '../components/layout';
 import validator from 'validator';
 import ShowMedicalRecord from './ShowMedicalRecord';
-import { Segment, Form, Header, Tab, Button, Divider, Icon, Search, Image, Message, Input } from 'semantic-ui-react';
+import { Segment, Form, Header, Tab, Button,  Message } from 'semantic-ui-react';
 
 export class PatientHomePage extends Component {
     constructor(props) {

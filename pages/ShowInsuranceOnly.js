@@ -1,9 +1,9 @@
 import React, { Component } from 'react';
 import web3 from '../ethereum/web3';
-import axios from 'axios';
+// import axios from 'axios';
 import medRec from '../ethereum/build/MedicalRecord';
-import { Segment, Form, Input, Image, Progress, Header, List, Message, Popup, Icon, Label, Button, Grid, Dropdown, Divider } from 'semantic-ui-react';
-import Layout from '../components/layout';
+import { Header, List,  Popup, Icon,  Button, Grid,  Divider } from 'semantic-ui-react';
+// import Layout from '../components/layout';
 
 export default class ShowMedicalRecord extends Component {
     constructor(props) {

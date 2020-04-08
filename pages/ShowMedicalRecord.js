@@ -2,15 +2,17 @@ import React, { Component } from 'react';
 import web3 from '../ethereum/web3';
 import axios from 'axios';
 import medRec from '../ethereum/build/MedicalRecord';
-import { Segment, Form, Input, Image, Progress, Header, List, Message, Popup, Icon, Label, Button, Grid, Dropdown, Divider } from 'semantic-ui-react';
-import Layout from '../components/layout';
+import { Form, Input, Progress, Header, Dimmer, Loader, List, Popup, Icon, Button, Grid, Divider } from 'semantic-ui-react';
+import ShowInsurance from './showInsurance';
+import ins from '../ethereum/build/Insurance';
+
 
 export default class ShowMedicalRecord extends Component {
     constructor(props) {
         super(props);
-        this.state = { name: '', gender: '', dob: '', mobile: '', aadhar: '', paddress: '',
-        postalcode: '', country: '', password: '', medicalHistory: '', diagnosis: '', medications: '', allergies: '', progressNotes: '', vitalSigns: '', immunizationDates: '',
-        emergency: '', billingData: '', radiologyImages: '', labResults: '', insurances: '', fileChangesLoading: false, nonDemDataChangesLoading: false, errorMessage: '', selectedFile: null, billingDataLoad: false, radiologyImagesLoad: false, labResultsLoad: false, isShowActive: true, isEditActive: false};
+        this.state = { name: [], gender: [], dob: [], mobile: [], aadhar: [], paddress: [],
+        postalcode: [], country: [], password: [], medicalHistory: [], diagnosis: [], medications: [], allergies: [], progressNotes: [], vitalSigns: [], immunizationDates: [],
+        emergency: [], billingData: [], radiologyImages: [], labResults: [], insurances: [], fileChangesLoading: false, nonDemDataChangesLoading: false, errorMessage: [], selectedFile: null, billingDataLoad: false, radiologyImagesLoad: false, labResultsLoad: false, isShowActive: true, isEditActive: false, isLoaderDimmerActive: false, insuranceData: null};
     }
 
     toggle = () => {
@@ -109,18 +111,22 @@ export default class ShowMedicalRecord extends Component {
         this.setState({ loading: false });
     };
 
-    async componentDidMount() {
-        this.setState( { name: 'sanket', gender: 'male', medicalHistory: 'sdfsfdsfsdf', diagnosis: 'asdasdsad', labResults: 'sadsafdsfdsf' } );
-        const accounts = await web3.eth.getAccounts();
-        const mr = new web3.eth.Contract(medRec.abi, '0x7f94d11a648211b6ac67e749e10d78b2ba0afe8a');
-        const demographicsData = await mr.methods
-        .password()
-        .call();
+    // componentWillMount() {
+    //     // this.setState( { name: 'sanket', gender: 'male', medicalHistory: 'sdfsfdsfsdf', diagnosis: 'asdasdsad', labResults: 'sadsafdsfdsf' } );
+    //     // const accounts = await web3.eth.getAccounts();
+    //     // const mr = new web3.eth.Contract(medRec.abi, '0x7f94d11a648211b6ac67e749e10d78b2ba0afe8a');
+    //     // const demographicsData = await mr.methods
+    //     // .password()
+    //     // .call();
 
 
-        this.setState( { name: demographicsData } );
-        console.log(demographicsData);
-    }
+    //     // this.setState( { name: demographicsData } );
+    //     // console.log(demographicsData);
+    //     this.setState( { name: this.props.data[1][0], gender: this.props.data[1][1], dob : this.props.data[1][2], mobile: this.props.data[1][3], aadhar: this.props.data[1][4], paddress: this.props.data[1][5], postalcode: this.props.data[1][6], country: this.props.data[1][7],
+    //     medicalHistory: this.props.data[2][0], diagnosis: this.props.data[2][1], medications: this.props.data[2][2], allergies: this.props.data[2][3], progressNotes: this.props.data[2][4], vitalSigns: this.props.data[2][5], immunizationDates: this.props.data[2][6], emergency: this.props.data[2][7],
+    //     billingData: this.props.data[3][0], radiologyImages: this.props.data[3][1], labResults: this.props.data[3][2], insurances: this.props.data[3][3]
+    //     } )
+    // }
 
     applyFileChanges = async () => {
         this.setState({ fileChangesLoading: true, errorMessage: '' });
@@ -163,8 +169,7 @@ export default class ShowMedicalRecord extends Component {
     }
 
     renderBilling = () => {
-        let data = [6756, 87687, 8787687];
-        const items = data.map(function(val,index) {
+        const items = this.state.billingData.map(function(val,index) {
             return {
               content: val,
               as: 'a'
@@ -174,8 +179,7 @@ export default class ShowMedicalRecord extends Component {
     }
 
     renderRadiology = () => {
-        let data = [6756, 87687, 8787687];
-        const items = data.map(function(val,index) {
+        const items = this.state.radiologyImages.map(function(val,index) {
             return {
               content: val,
               as: 'a'
@@ -186,8 +190,7 @@ export default class ShowMedicalRecord extends Component {
     }
 
     renderLabresults = () => {
-        let data = [6756, 87687, 8787687];
-        const items = data.map(function(val,index) {
+        const items = this.state.labResults.map(function(val,index) {
             return {
               content: val,
               as: 'a'
@@ -197,13 +200,23 @@ export default class ShowMedicalRecord extends Component {
         return <List items={items} onClick={this.renderListHandle} size='large' divided inverted relaxed ordered/>
     }
 
-    renderInsuranceHandle = () => {
-
+    renderInsuranceHandle = async (e) => {
+        this.setState({ isLoaderDimmerActive: true });
+        let output;
+        try {
+            let address = new web3.eth.Contract(ins.abi, '0xb45b443af641086922D4DC50f7fD04a8b0A1d66d');
+            output = await address.methods.getData().call();
+            console.log('1');
+        } catch (err) {
+        }
+        console.log(ins.abi);
+        console.log('kkkkkkk bb *************8');
+        console.log(output);
+        this.setState({ insuranceData: output, isLoaderDimmerActive: false, isShowActive: false, isInsuranceActive: true });
     }
 
     renderInsurance = () => {
-        let data = [6756, 87687, 8787687];
-        const items = data.map(function(val,index) {
+        const items = this.state.insurances.map(function(val,index) {
             return {
               content: val,
               as: 'a'
@@ -216,6 +229,9 @@ export default class ShowMedicalRecord extends Component {
     render() {
         return (
             <div>
+                <Dimmer active={this.state.isLoaderDimmerActive}>
+                    <Loader active={ this.state.isLoaderDimmerActive }></Loader>
+                </Dimmer>
                 {this.state.isShowActive ? <div>
                 <Grid stackable style={ { marginLeft: '2px' } }>
                     <Grid.Row>
@@ -250,7 +266,7 @@ export default class ShowMedicalRecord extends Component {
                         <Grid.Column>
                             <Header dividing color='grey' as='h2'>
                                 DOB :-
-                                <Header.Subheader style={ { fontSize: '20px' } } color='red' >
+                                <Header.Subheader style={ { fontSize: '20px', color: 'white' } } color='red' >
                                 { this.state.dob }
                                 </Header.Subheader>
                             </Header>
@@ -258,7 +274,7 @@ export default class ShowMedicalRecord extends Component {
                         <Grid.Column>
                             <Header dividing color='grey' as='h2'>
                                 Mobile :-
-                                <Header.Subheader style={ { fontSize: '20px' } } color='red' >
+                                <Header.Subheader style={ { fontSize: '20px', color: 'white' } } color='red' >
                                 { this.state.mobile }
                                 </Header.Subheader>
                             </Header>
@@ -266,7 +282,7 @@ export default class ShowMedicalRecord extends Component {
                         <Grid.Column>
                             <Header dividing color='grey' as='h2'>
                                 AADHAR :-
-                                <Header.Subheader style={ { fontSize: '20px' } } color='red' >
+                                <Header.Subheader style={ { fontSize: '20px', color: 'white' } } color='red' >
                                 { this.state.aadhar }
                                 </Header.Subheader>
                             </Header>
@@ -276,7 +292,7 @@ export default class ShowMedicalRecord extends Component {
                         <Grid.Column>
                             <Header dividing color='grey' as='h2'>
                                 ADDRESS :-
-                                <Header.Subheader style={ { fontSize: '20px' } } color='red' >
+                                <Header.Subheader style={ { fontSize: '20px', color: 'white' } } color='red' >
                                 { this.state.paddress }
                                 </Header.Subheader>
                             </Header>
@@ -286,7 +302,7 @@ export default class ShowMedicalRecord extends Component {
                         <Grid.Column>
                             <Header dividing color='grey' as='h2'>
                                 POSTALCODE :-
-                                <Header.Subheader style={ { fontSize: '20px' } } color='red' >
+                                <Header.Subheader style={ { fontSize: '20px', color: 'white' } } color='red' >
                                 { this.state.postalcode }
                                 </Header.Subheader>
                             </Header>
@@ -294,7 +310,7 @@ export default class ShowMedicalRecord extends Component {
                         <Grid.Column>
                             <Header dividing color='grey' as='h2'>
                                 COUNTRY :-
-                                <Header.Subheader style={ { fontSize: '20px' } } color='red' >
+                                <Header.Subheader style={ { fontSize: '20px', color: 'white' } } color='red' >
                                 { this.state.country }
                                 </Header.Subheader>
                             </Header>
@@ -313,7 +329,7 @@ export default class ShowMedicalRecord extends Component {
                         <Grid.Column width='16'>
                             <Header dividing color='grey' as='h2'>
                                 MEDICAL HISTORY :-
-                                <Header.Subheader style={ { fontSize: '20px' } } color='red' >
+                                <Header.Subheader style={ { fontSize: '20px', color: 'white' } } color='red' >
                                 { this.state.medicalHistory }
                                 </Header.Subheader>
                             </Header>
@@ -323,7 +339,7 @@ export default class ShowMedicalRecord extends Component {
                         <Grid.Column width='16'>
                             <Header dividing color='grey' as='h2'>
                                 DIAGNOSIS :-
-                                <Header.Subheader style={ { fontSize: '20px' } } color='red' >
+                                <Header.Subheader style={ { fontSize: '20px', color: 'white' } } color='red' >
                                 { this.state.diagnosis }
                                 </Header.Subheader>
                             </Header>
@@ -333,7 +349,7 @@ export default class ShowMedicalRecord extends Component {
                         <Grid.Column width='16'>
                             <Header dividing color='grey' as='h2'>
                                 MEDICATIONS :-
-                                <Header.Subheader style={ { fontSize: '20px' } } color='red' >
+                                <Header.Subheader style={ { fontSize: '20px', color: 'white' } } color='red' >
                                 { this.state.medications }
                                 </Header.Subheader>
                             </Header>
@@ -343,7 +359,7 @@ export default class ShowMedicalRecord extends Component {
                         <Grid.Column width='16'>
                             <Header dividing color='grey' as='h2'>
                                 ALLERGIES :-
-                                <Header.Subheader style={ { fontSize: '20px' } } color='red' >
+                                <Header.Subheader style={ { fontSize: '20px', color: 'white' } } color='red' >
                                 { this.state.allergies }
                                 </Header.Subheader>
                             </Header>
@@ -353,7 +369,7 @@ export default class ShowMedicalRecord extends Component {
                         <Grid.Column width='16'>
                             <Header dividing color='grey' as='h2'>
                                 PROGRESS NOTES :-
-                                <Header.Subheader style={ { fontSize: '20px' } } color='red' >
+                                <Header.Subheader style={ { fontSize: '20px', color: 'white' } } color='red' >
                                 { this.state.progressNotes }
                                 </Header.Subheader>
                             </Header>
@@ -363,7 +379,7 @@ export default class ShowMedicalRecord extends Component {
                         <Grid.Column width='16'>
                             <Header dividing color='grey' as='h2'>
                                 VITAL SIGNS :-
-                                <Header.Subheader style={ { fontSize: '20px' } } color='red' >
+                                <Header.Subheader style={ { fontSize: '20px', color: 'white' } } color='red' >
                                 { this.state.vitalSigns }
                                 </Header.Subheader>
                             </Header>
@@ -373,7 +389,7 @@ export default class ShowMedicalRecord extends Component {
                         <Grid.Column width='16'>
                             <Header dividing color='grey' as='h2'>
                                 IMMUNIZATION DATES :-
-                                <Header.Subheader style={ { fontSize: '20px' } } color='red' >
+                                <Header.Subheader style={ { fontSize: '20px', color: 'white' } } color='red' >
                                 { this.state.immunizationDates }
                                 </Header.Subheader>
                             </Header>
@@ -383,7 +399,7 @@ export default class ShowMedicalRecord extends Component {
                         <Grid.Column width='16'>
                             <Header dividing color='grey' as='h2'>
                                 EMERGENCY :-
-                                <Header.Subheader style={ { fontSize: '20px' } } color='red' >
+                                <Header.Subheader style={ { fontSize: '20px', color: 'white' } } color='red' >
                                 { this.state.emergency }
                                 </Header.Subheader>
                             </Header>
@@ -427,7 +443,7 @@ export default class ShowMedicalRecord extends Component {
                             <Header dividing color='grey' as='h2'>
                                 INSURANCE :-
                             </Header>
-                            { this.renderInsurance }
+                            { this.renderInsurance() }
                         </Grid.Column>
                     </Grid.Row>
                     <Grid.Row>
@@ -583,6 +599,11 @@ export default class ShowMedicalRecord extends Component {
                 </Grid.Column>
                 </Grid>
                 : null}
+
+                {this.state.isInsuranceActive ?
+                <div>
+                    <ShowInsurance data={this.state.insuranceData}></ShowInsurance>
+                </div>:null}
             </div>
         )
     }

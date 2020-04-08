@@ -1,10 +1,10 @@
 import React, { Component } from 'react';
 import Layout from '../components/layout';
-import { Link } from '../routes';
-import { Button, Confirm, Divider, Grid, Segment, Container } from 'semantic-ui-react';
-import { Form, Header, Image, Message, Modal, Icon } from 'semantic-ui-react';
+// import { Link } from '../routes';
+import { Button, Confirm,  Grid } from 'semantic-ui-react';
+import {  Header,  Modal, Icon } from 'semantic-ui-react';
 import web3 from '../ethereum/web3';
-import doctor from '../ethereum/build/Doctor';
+// import doctor from '../ethereum/build/Doctor';
 import Owner from '../ethereum/build/Owner';
 
 

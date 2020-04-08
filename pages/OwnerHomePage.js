@@ -3,12 +3,12 @@ import web3 from '../ethereum/web3';
 import axios from 'axios';
 import Layout from '../components/layout';
 import Owner from '../ethereum/build/Owner';
-import AddMap from '../ethereum/build/AddressMapping';
-import {Router} from '../routes';
+// import AddMap from '../ethereum/build/AddressMapping';
+// import {Router} from '../routes';
 import validator from 'validator';
 
 import RequestRequests from '../components/RequestRequests';
-import { Segment, Statistic, Tab, Form, Table, Card, Confirm, Step, Input, Image, Progress, Header, Message, Icon, Label, Button, Grid, Dropdown, Divider } from 'semantic-ui-react';
+import { Segment, Statistic, Tab, Form, Table, Card, Confirm, Input,  Progress, Header,  Icon,  Button, Grid,  Divider } from 'semantic-ui-react';
 
 class OwnerHomePage extends Component {
     constructor(props) {

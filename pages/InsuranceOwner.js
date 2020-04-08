@@ -6,7 +6,7 @@ export default class InsuranceOwner extends Component {
         return (
             <div>
                 <Layout>
-
+                    
                 </Layout>
             </div>
         )

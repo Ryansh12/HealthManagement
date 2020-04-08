@@ -1,0 +1,214 @@
+//server setup
+const express = require( 'express' );
+const routes = require( './routes' );
+const next = require( 'next' );
+const dev = process.env.NODE_ENV !== 'production';
+const app = next( { dev } );
+const handle = routes.getRequestHandler( app );
+
+//file upload
+var multer = require('multer')
+var cors = require('cors');
+
+//file system
+var fs = require('fs');
+
+//file compress
+var archiver = require('archiver');
+
+//file encrypt
+var encryptor = require('file-encryptor');
+
+//ipfs
+const ipfsAPI = require('ipfs-api');
+
+
+//delete folder and all its content
+var deleteFolderRecursive = function(path) {
+    if( fs.existsSync(path) ) {
+      fs.readdirSync(path).forEach(function(file,index){
+        var curPath = path + "/" + file;
+        if(fs.lstatSync(curPath).isDirectory()) { // recurse
+          deleteFolderRecursive(curPath);
+        } else { // delete file
+          fs.unlinkSync(curPath);
+        }
+      });
+      fs.rmdirSync(path);
+    }
+};
+
+//create file directory
+const createDir = ( dirPath ) => {
+    fs.mkdirSync( dirPath, { recursive: true }, ( error ) => { 
+        if ( error ) {
+            console.error( 'An error occurred:', error );
+        } else {
+            console.log( 'Your directory is made!' );
+        }
+     } );
+}
+
+const encrypt = (now) => {
+  var key = 'My Super Secret Key';
+  setTimeout(() =>  5000)
+
+  encryptor.encryptFile('public/' + now + '/compress/' + now + '.zip', 'public/' + now + '/compress/' + now + '.dat', key, function(err) {
+    // Encryption complete.
+  });
+}
+
+//file upload
+let newPathForStorage;
+var storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, newPathForStorage )
+    },
+    filename: function (req, file, cb) {
+      cb(null, Date.now() + '-' +file.originalname )
+    }
+})
+
+var upload = multer({ storage: storage }).array('file');
+
+
+app.prepare()
+.then( () => {
+    const server = express()
+    server.use(cors())
+
+    //file upload
+    server.post('/upload',function(req, res) {
+        let now = Date.now();
+        newPathForStorage = 'public/' + now;
+        createDir( newPathForStorage )
+
+        upload(req, res, function (err) {
+            if (err instanceof multer.MulterError) {
+                return res.status(500).json(err)
+              // A Multer error occurred when uploading.
+            } else if (err) {
+                return res.status(500).json(err)
+              // An unknown error occurred when uploading.
+            }
+
+            async function f() {
+
+              let promise = new Promise((resolve, reject) => {
+            //compress stage
+            //= create a file to stream archive data to.
+            createDir( newPathForStorage + '/compress')
+            var output = fs.createWriteStream( 'public/' + now + '/compress/' + now + '.zip' );
+            var archive = archiver('zip', {
+            zlib: { level: 9 } // Sets the compression level.
+            });
+
+            //= listen for all archive data to be written
+            //= 'close' event is fired only when a file descriptor is involved
+            output.on('close', function() {
+                console.log(archive.pointer() + ' total bytes');
+                console.log('archiver has been finalized and the output file descriptor has closed.');
+            });
+
+            //= This event is fired when the data source is drained no matter what was the data source.
+            //= It is not part of this library but rather from the NodeJS Stream API.
+            //= @see: https://nodejs.org/api/stream.html#stream_event_end
+            output.on('end', function() {
+                console.log('Data has been drained');
+            });
+
+            //= good practice to catch warnings (ie stat failures and other non-blocking errors)
+            archive.on('warning', function(err) {
+                if (err.code === 'ENOENT') {
+                //= log warning
+                } else {
+                //= throw error
+                throw err;
+                }
+            });
+
+            //= good practice to catch this error explicitly
+            archive.on('error', function(err) {
+                throw err;
+            });
+
+            //= pipe archive data to the file
+            archive.pipe(output);
+
+            fs.readdirSync(newPathForStorage).forEach(function(file,index){
+                if( file != 'compress' ) {
+                  var curPath = newPathForStorage + "/" + file;
+                  archive.append(fs.createReadStream(curPath), { name: file });
+                }
+            });
+
+            //= finalize the archive (ie we are done appending files but streams have to finish yet)
+            //= 'close', 'end' or 'finish' may be fired right after calling this method so register to them beforehand
+            archive.finalize();
+                resolve("done!")
+              });
+              let result = await promise; // wait until the promise resolves (*)
+            }
+            
+            f();
+
+
+
+            //= Encrypt file.
+            createDir( newPathForStorage + '/ipfs');
+            encrypt(now);
+
+
+            //ipfs
+            const ipfs = ipfsAPI('ipfs.infura.io', '5001', {protocol: 'https'})
+
+            let testFile = fs.readFileSync( 'public/' + now + '/compress/' + now + '.dat' );
+            let testBuffer = new Buffer(testFile);
+            let fileHash;
+
+            ipfs.files.add(testBuffer, function (err, file) {
+              if (err) {
+                console.log('sadasdsadsadsad');
+                console.log(err);
+              }
+              fileHash = file.map(a => a.hash)[0];
+                console.log(fileHash)
+            })
+
+            // Everything went fine.
+            return res.status(200).send( fileHash )
+            // Everything went fine.
+          })
+    });
+
+
+    server.get( '*', ( req, res ) => {
+        return handle( req, res )
+    } )
+
+
+    server.use( handle ).listen( 3000, ( err ) => {
+        if ( err ) throw err
+        console.log( '> Ready on http://localhost:3000' )
+    } )
+
+ } )
+.catch( ( ex ) => {
+    console.error( ex.stack )
+    process.exit( 1 )
+} )
+
+
+
+const encrypt = (now) => {
+
+  const key = 'My Super Secret Key';
+  
+  const encryptor = new Encryptor({ key });
+  
+  // Encrypt file.
+  await encryptor.encryptFile('input_file.txt', 'encrypted.dat');
+  
+  // Decrypt file.
+  await encryptor.decryptFile('encrypted.dat', 'output_file.txt');
+}

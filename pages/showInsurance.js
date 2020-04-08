@@ -2,33 +2,81 @@ import React, { Component } from 'react';
 import web3 from '../ethereum/web3';
 import Layout from '../components/layout';
 import axios from 'axios';
-import Insurance from '../ethereum/build/Insurance';
-import RequestInsRequests from '../components/RequestRequests';
-import { Segment, Header, Grid, Statistic, Message, Button, Tab, Divider, Form, Input, Progress, Card } from 'semantic-ui-react';
+import ins from '../ethereum/build/Insurance';
+import validator from 'validator';
+// import { InputFile } from 'semantic-ui-react-input-file';
+import RequestInsRequests from '../components/RequestInsRequests';
+import { Segment, Header, Icon, Loader, Modal, Dimmer, Grid, Statistic, Message, Button, Tab, Divider, Form,  Progress, Card } from 'semantic-ui-react';
 
 
 export class showInsurance extends Component {
     constructor(props) {
         super(props);
         this.state = { owner: 'jhjhgj', deployedAddress: 'jhjghgj', name: 'hghgf', aadhar: 'jhbjhg', details: 'jhgh', documents: '',
-            amount: 0, newTitle: '', newDetails: '', newFileHash: '', bills: '', selectedFile: null, loadingFile: false, loaded: 0, requests: null,
+            amount: 0, newTitle: '', newTitleError: false, newDetails: '', newDetailsError: false, newFileHash: '', newFileHashError: false, selectedFile: null, loadingFile: false, loaded: 0, requests: null,
+            newRequestFormLoading: false, errorMessage: '', isModalOpen: false, modalContent: '', modalHeader: '', modalIconColor: 'red', modalIconName: 'clock', isLoaderDimmerActive: false, loadderDimmerContent: 'asdasd'
         }
     }
 
-    async componentDidMount() {
-        const accounts = await web3.eth.getAccounts();
-        console.log(";;;;;;;;;;;;;;;;;;;;;");
-        // const instance1 = new web3.eth.Contract(AddMap.abi, );
-        // const instance2 = new web3.eth.Contract(Owner.abi, await instance1.methods.getOwner().call() );
-        // const da = await instance.methods.isPasswordCorrect().call( { from: accounts[0] } );
-        const instance2 = new web3.eth.Contract(Insurance.abi, '0x046ABD4666E6fe0E6B54Dd40953B435E22a8b3BC' );
-        const da = await instance2.methods.getData().call( { from: accounts[0] } );
-        this.setState( { deployedAddress: da[0], owner: da[1], name: da[2], aadhar: da[3], details: da[4], documents: da[5], amount: da[6], requests: da[7] } );
-        console.log('ooooooooooooooooooooooooooooooooooooooo');
-        console.log(da);
+    modalTopple = () => {
+        alert('asdasd');
+        this.setState({ isModalOpen: !this.state.isModalOpen });
     }
 
-    fileInputRef = React.createRef();
+    componentWillMount() {
+
+    }
+
+    newInsuranceForm = async (e) => {
+        let dta = 'QmY2Z3DftKwdc79MdJBCj2PQT5dMTpzvX5kUFefd5AHc9B';
+        console.log(dta);
+        axios.get("http://localhost:3000/download",  {
+            params: {
+              data: dta
+            }
+          })
+        .then(res => { // then print response status
+            this.setState({ newFileHash: res.data, selectedFile: null, loadingFile: false });
+        })
+        .catch(err => { // then print response status
+        })
+
+        e.preventDefault();
+        let errorFlag
+        if( (validator.isEmpty(this.state.newTitle))) {
+            this.setState( { newTitleError: 'Enter Title' } );
+            errorFlag=true;
+        }else {
+            this.setState( { newTitleError:  false } )
+        }
+
+        if( (validator.isEmpty(this.state.newDetails))) {
+            this.setState( { newDetailsError: 'Enter Details' } );
+            errorFlag=true;
+        }else {
+            this.setState( { newDetailsError:  false } )
+        }
+
+        if( (validator.isEmpty(this.state.newFileHash))) {
+            this.setState( { newFileHashError: 'Upload File' } );
+            errorFlag=true;
+        }else {
+            this.setState( { newFileHashError:  false } )
+        }
+
+        if(!errorFlag) {
+            this.setState( { newRequestFormLoading: true, errorMessage: '' } );
+
+            try {
+                const address = new web3.eth.Contract(ins.abi, deployedAddress);
+                console.log(accounts[0]);
+                isDoctorAllowed = await address.methods.applyClaim(this.state.newTitle, this.state.newDetails, this.state.newFileHash).send( { from: accounts[0] } );
+            } catch (err) {
+                this.setState({ errorMessage: err.message });
+            }
+            this.setState( { newRequestFormLoading: false } );
+        }
+    }
 
     onFileSelect=(event)=>{
         var files = event.target.files;
@@ -53,7 +101,7 @@ export class showInsurance extends Component {
             }
         })
         .then(res => { // then print response status
-            this.setState({ bills: res.data, selectedFile: null, loadingFile: false });
+            this.setState({ newFileHash: res.data, selectedFile: null, loadingFile: false });
         })
         .catch(err => { // then print response status
         })
@@ -72,18 +120,55 @@ export class showInsurance extends Component {
         }
     }
 
-    renderRequests = () => {
-        if( this.state.requests != null ) {
-            console.log( 'sanket uttarwar' );
-            console.log(this.state.requests);
-            return this.state.requests.map((req, index) => {
-                return (
-                  <RequestInsRequests
-                    key={index}
-                    request={req}
-                  />
-                );
-            });
+    renderRequests = (input) => {
+        if( input == 'pending' ) {
+            if( this.state.requests != null ) {
+                console.log( 'sanket uttarwar' );
+                console.log(this.state.requests);
+                return this.state.requests.filter((req) => {
+                    return (req[8] == false)
+                }).map((req, index) => {
+                    console.log(req);
+                    return (
+                      <RequestInsRequests
+                        key={index}
+                        requestData={req}
+                      />
+                    );
+                });
+            }
+        } else if( input == 'approved' ) {
+            if( this.state.requests != null ) {
+                console.log( 'sanket uttarwar' );
+                console.log(this.state.requests);
+                return this.state.requests.filter((req) => {
+                    return ((req[8] == true) && (req[5] == true))
+                }).map((req, index) => {
+                    console.log(req);
+                    return (
+                      <RequestInsRequests
+                        key={index}
+                        requestData={req}
+                      />
+                    );
+                });
+            }
+        }else {
+            if( this.state.requests != null ) {
+                console.log( 'sanket uttarwar' );
+                console.log(this.state.requests);
+                return this.state.requests.filter((req) => {
+                    return ((req[8] == true) && (req[5] == false))
+                }).map((req, index) => {
+                    console.log(req);
+                    return (
+                      <RequestInsRequests
+                        key={index}
+                        requestData={req}
+                      />
+                    );
+                });
+            }
         }
     }
 
@@ -99,57 +184,50 @@ export class showInsurance extends Component {
                                 New Request
                             </Header>
                         </Divider>
-                        <Form onSubmit={this.onFormSubmit} inverted error={!!this.state.errorMessage}>
-                        <Form.Field required>
-                            <label style={ { color: '#767676' } }>Title</label>
-                            <Input
-                                placeholder='Title'
-                                label="Title"
-                                labelPosition="left"
+                        <Form onSubmit={this.newInsuranceForm} inverted error={!!this.state.errorMessage}>
+                        <Form.Field>
+                            <label style={ { color: '#808080' } }>Title</label>
+                            <Form.Input
+                                fluid
                                 value={this.state.newTitle}
                                 onChange={event =>
                                 this.setState({ newTitle: event.target.value })}
+                                placeholder='Title'
+                                error={this.state.newTitleError}
                             />
                         </Form.Field>
-                        <Form.Field required>
-                            <label style={ { color: '#767676' } }>Details</label>
-                                <Input
-                                    placeholder='Details'
-                                    label="Details"
-                                    labelPosition="left"
-                                    value={this.state.newDetails}
-                                    onChange={event =>
-                                    this.setState({ newDetails: event.target.value })}
-                                />
-                        </Form.Field>
-                        <Form.Field required>
-                            <label style={ { color: '#767676' } }>Bills</label>
-                            <Input
-                                placeholder='Bills'
-                                label="Bills"
-                                labelPosition="left"
-                                value={this.state.bills}
+                        <Form.Field>
+                            <label style={ { color: '#808080' } }>Details</label>
+                            <Form.Input
+                                fluid
+                                value={this.state.newDetails}
                                 onChange={event =>
-                                this.setState({ bills: event.target.value })}
+                                this.setState({ newDetails: event.target.value })}
+                                placeholder='Details'
+                                error={this.state.newDetailsError}
+                            />
+                        </Form.Field>
+                        <Form.Field>
+                            <label style={ { color: '#808080' } }>Bills</label>
+                            <Form.Input
+                                fluid
+                                value={this.state.newFileHash}
+                                onChange={event =>
+                                this.setState({ newFileHash: event.target.value })}
+                                placeholder='FileHash'
+                                error={this.state.newFileHashError}
                             />
                         </Form.Field>
                         <Form.Group>
                             <Form.Field>
-                                <Button
-                                    content="Choose File"
-                                    labelPosition="left"
-                                    icon="upload"
-                                    onClick={() => this.fileInputRef.current.click()}
-                                />
-                                <input
-                                    ref={this.fileInputRef}
-                                    type="file"
-                                    hidden
-                                    onChange={this.onFileSelect}
-                                />
+
+                            <Button floated style={ { height: '36.5px' } } color='red' as="label" htmlFor="file" type="button">
+                            <Icon name='upload' size='large' />Select Files For Upload
+</Button>
+<input type="file" id="file" style={{ visibility: "hidden", display: 'none' }} multiple onChange={this.onFileSelect} />
                             </Form.Field>
                             <Form.Field>
-                                <Button loading={this.state.loadingFile} color='green' onClick={this.uploadDocuments}>
+                                <Button disabled={this.state.loadingFile} loading={this.state.loadingFile} color='green' onClick={this.uploadDocuments}>
                                 Upload Files and Generate Hash
                                 </Button>
                             </Form.Field>
@@ -157,35 +235,47 @@ export class showInsurance extends Component {
                         <Progress percent={this.state.loaded} progress success>
                                 success
                         </Progress>
+                        <Message hidden={!this.state.errorMessage.length != 0} header="Oops!" content={this.state.errorMessage} />
                         <Button
                             type='submit'
-                            loading={this.state.loadingIns}
+                            loading={this.state.newRequestFormLoading}
+                            disabled={this.state.newRequestFormLoading}
                             content='Submit Request'
                             primary
                         />
                         </Form>
                     </Grid.Column>
                 </Grid>
-            </Tab.Pane>
-            },
-            { menuItem: 'Requests', render: () =>
-            <Tab.Pane inverted>
-                <Card.Group centered >
-                    { this.renderRequests() }
-                </Card.Group>
+                <style jsx>
+    {
+        `
+        .inputfile {
+            visibility: hidden;
+        }
+        `
+    }
+</style>
             </Tab.Pane>
             },
             { menuItem: 'Pending', render: () =>
             <Tab.Pane inverted>
-
+                <Card.Group centered >
+                    { this.renderRequests('pending') }
+                </Card.Group>
             </Tab.Pane>
             },
             { menuItem: 'Approved', render: () =>
             <Tab.Pane inverted>
+                <Card.Group centered >
+                    { this.renderRequests('approved') }
+                </Card.Group>
             </Tab.Pane>
             },
             { menuItem: 'Rejected', render: () =>
             <Tab.Pane inverted>
+                <Card.Group centered >
+                    { this.renderRequests('rejected') }
+                </Card.Group>
             </Tab.Pane>
             },
         ]
@@ -194,7 +284,20 @@ export class showInsurance extends Component {
     }
     render() {
         return (
-            <Layout>
+            <div>
+                <Layout>
+                <Dimmer active={this.state.isLoaderDimmerActive}>
+                    <Loader>{this.state.loadderDimmerContent}</Loader>
+                </Dimmer>
+                <Modal open={this.state.isModalOpen} inverted>
+                    <Header><Icon color={ this.state.modalIconColor } name={ this.state.modalIconName } size='big'/>{ this.state.modalHeader }</Header>
+                    <Modal.Content>{ this.state.modalContent }</Modal.Content>
+                    <Modal.Actions>
+                        <Button color='blue' onClick={this.modalTopple} inverted>
+                        <Icon name='checkmark' /> Ok
+                        </Button>
+                    </Modal.Actions>
+                </Modal>
                 <Segment stackable color='black' inverted style={ { height: '100vh' } }>
                     <Header color={"grey"}  as='h1'>Insurance</Header>                    
                     <Grid inverted stackable>
@@ -246,7 +349,22 @@ export class showInsurance extends Component {
                     <Tab defaultActiveIndex={1} menu={{ color: 'purple', inverted: true }} inverted style={ { marginTop: '4px' } } panes={this.getPanesData()} onTabChange={this.handleChange} />
                 </Segment>
             </Layout>
-        )
+<style jsx>
+    {
+        `
+        .inputfile {
+            width: 0.1px;
+            height: 0.1px;
+            opacity: 0;
+            overflow: hidden;
+            position: absolute;
+            z-index: -1;
+        }
+        `
+    }
+</style>
+            </div>
+            )
     }
 }
 

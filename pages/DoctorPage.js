@@ -1,12 +1,15 @@
 import React, { Component } from 'react';
-import { Button, Confirm, Grid, Segment, Container, GridColumn } from 'semantic-ui-react';
-import { Form, Header, Tab, Divider, Icon, Search, Image, Message, Input } from 'semantic-ui-react';
+import { Button, Grid, Segment } from 'semantic-ui-react';
+import { Form, Header, Tab,  Icon,  Message,  Modal } from 'semantic-ui-react';
 import Layout from '../components/layout';
 import doctor from '../ethereum/build/Doctor';
+import medRec from '../ethereum/build/MedicalRecord';
+import addMap from '../ethereum/build/AddressMapping';
 import web3 from '../ethereum/web3';
 import validator from 'validator';
 import MedicalRecordForm from './MedicalRecordForm';
 import ShowMedicalRecord from './ShowMedicalRecord';
+
 
 import { Link } from '../routes';
 
@@ -14,10 +17,20 @@ import { Link } from '../routes';
 export default class DoctorPage extends Component {
   constructor(props) {
     super(props);
-    this.state = { searchPatientAadhar: '', searchPatientAadharError: false ,aadhar: '', aadharError: false, name: '', nameError: false, details: '', detailsError: false, errorMessage: '', newDoctorLoading: false, newDoctorErrorMessage: '', searchLoading: false, searchErrorMessage: '', isSearchPatientActive: true, isModalOpen: true, modalContent: '', modalHeader: '', modalIconColor: 'red', modalIconName: 'clock' };
+    this.state = { patientData: null, searchPatientAadhar: '', searchPatientAadharError: false ,aadhar: '', aadharError: false, name: '', nameError: false, details: '', detailsError: false, errorMessage: '', newDoctorLoading: false, newDoctorErrorMessage: '', searchLoading: false, searchErrorMessage: '', isSearchPatientActive: true, isModalOpen: false, modalContent: '', modalHeader: '', modalIconColor: 'red', modalIconName: 'clock' };
   }
 
-  searchPatient = async () => {
+  modalTopple = () => {
+    alert('asdasd');
+    this.setState({ isModalOpen: !this.state.isModalOpen });
+  }
+
+  searchTopple = () => {
+    this.setState({ isSearchPatientActive: !this.state.isSearchPatientActive });
+  }
+
+  searchPatient = async (event) => {
+    event.preventDefault();
     let errorFlag= false;
 
     if( (!validator.isNumeric(this.state.searchPatientAadhar)) ||  (validator.isEmpty(this.state.searchPatientAadhar)) || (this.state.searchPatientAadhar.length != 12)) {
@@ -27,13 +40,48 @@ export default class DoctorPage extends Component {
         this.setState( { searchPatientAadharError:  false } )
     }
 
-    if(!errorFlag) {
+    let dd = true;
+    if(dd) {
+      this.setState({ searchLoading: true, searchErrorMessage: 'sanket' });
+      let accounts = await web3.eth.getAccounts();
+      let output, medRecAdd;
 
+      try {
+          const address = new web3.eth.Contract(addMap.abi, '0xA0Ca43D1AF9d4B5471a19E922690118ACf9588c5');
+          medRecAdd = await address.methods.getRecordAddress(this.state.searchPatientAadhar).call();
+          console.log('1');
+      } catch (err) {
+          this.setState({ searchErrorMessage: err.message });
+      }
+      console.log(medRecAdd);
+      if(medRecAdd == 0x0000000000000000000000000000000000000000) {
+          this.setState( { modalHeader: 'Error', modalContent: 'No Record Exists', modalIconColor: 'red', modalIconName: 'cancel', isModalOpen: true } )
+          return;
+      }
+      else {
+        console.log('2');
+        try {
+          const address1 = new web3.eth.Contract(medRec.abi, medRecAdd);
+          output = await address1.methods.getPatientData().call( { from: accounts[0] } );
+          console.log('1');
+        } catch (err) {
+            this.setState({ searchErrorMessage: err.message });
+        }
+      }
+
+      if( output[0] == false ) {
+        this.setState( { modalHeader: 'Error', modalContent: 'You Are Not Authorized', modalIconColor: 'red', modalIconName: 'cancel', isModalOpen: true } )
+        return;
+      }
+      else {
+        this.setState( { patientData: output, isSearchPatientActive: false} );
+        console.log(output);
+      }
     }
 
   }
 
-  addNewDoctor = async event => {
+  addNewDoctor = async (event) => {
 
     try {
       const address = new web3.eth.Contract(doctor.abi, '0xE34AFD25c1D10e6b4eb532aC0C2E7Bb4BB78B03b');
@@ -152,8 +200,20 @@ export default class DoctorPage extends Component {
           Search
           </Button>
         </Form>
+        <Button color='blue'>
+      <Icon name='facebook' /> Facebook
+    </Button>
       </div>:
-      <ShowMedicalRecord></ShowMedicalRecord>
+      <div>
+        <ShowMedicalRecord data={ this.state.patientData }></ShowMedicalRecord>
+        <Grid stackable style={ { marginLeft: '2px' } }>
+          <Grid.Row>
+              <Grid.Column>
+                <Button onClick={this.searchTopple} style={ { marginTop: '4px' } } color='blue'><Icon name='arrow left' /> Back</Button>
+              </Grid.Column>
+          </Grid.Row>
+        </Grid>
+      </div>
       }
       </Tab.Pane>
       },

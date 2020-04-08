@@ -1,0 +1,398 @@
+pragma experimental ABIEncoderV2;
+
+contract Doctor {
+    struct doctor {
+        int aadhar;
+        string name;
+        string details;
+    }
+    mapping(address => doctor) public map;
+    mapping(address => bool) public check;
+
+    function isDoctor(address add) public view returns (bool) {
+        if(check[add])
+            return true;
+        return false;
+    }
+
+    function addDoctor(int aadharr, string memory namee, string memory detailss) public returns (address) {
+        if(!check[msg.sender]) {
+            doctor memory doc = doctor({
+                aadhar: aadharr,
+                name: namee,
+                details: detailss
+            });
+            check[msg.sender] = true;
+            map[msg.sender] = doc;
+            return msg.sender;
+        }
+    }
+
+    function createMedicalRecord(string memory namee, string memory genderr, uint256 dobb, int mobilee, int aadharr, string memory paddresss, 
+    uint256 postalcodee, string memory countryy, string memory passwordd) public returns (bool) {
+        if(check[msg.sender]) {
+            AddressMapping am = AddressMapping(0xe593797E53ebF9Fb1499c6374bef480Ab01453F7);
+            address returnAdd = address(new MedicalRecord(namee, genderr, dobb, mobilee, aadharr, paddresss, postalcodee, countryy, passwordd, address(msg.sender)));
+            am.setRecordAddress(aadharr, returnAdd);
+            return true;
+        } else {
+            address dummy;
+            return false;
+        }
+    }
+    
+    function addNonDemographics(int aadharr, string memory medicalHistoryy, string memory diagnosiss, string memory medicationss,
+    string memory allergiess, string memory progressNotess, string memory vitalSignss, string memory immunizationDatess, 
+    string memory emergencyy) public returns(bool) {
+        if(check[msg.sender]) {
+            AddressMapping am = AddressMapping(0xe593797E53ebF9Fb1499c6374bef480Ab01453F7);
+            MedicalRecord mr = MedicalRecord(address(am.getRecordAddress(aadharr)));
+            bool flag = mr.updateNondemographics(medicalHistoryy, diagnosiss, medicationss, allergiess, progressNotess, vitalSignss, immunizationDatess, emergencyy, address(msg.sender));
+            if(flag) {
+                return true;
+            }else {
+                return false;
+            }
+        }else {
+            return false;
+        }
+    }
+    
+    function addFiles(int aadharr, string memory billingDataa, string memory radiologyImagess, string memory labResultss, string memory insurancee) public returns(bool) {
+        if(check[msg.sender]) {
+            AddressMapping am = AddressMapping(0xe593797E53ebF9Fb1499c6374bef480Ab01453F7);
+            MedicalRecord mr = MedicalRecord(address(am.getRecordAddress(aadharr)));
+            mr.addFiles(billingDataa, radiologyImagess, labResultss, insurancee, address(msg.sender));
+        }
+    }
+}
+
+contract MedicalRecord {
+    struct PatientDemographics {
+        string name;
+        string gender;
+        uint256 dob;
+        int mobile;
+        int aadhar;
+        string paddress;
+        uint256 postalcode;
+        string country;
+    }
+    PatientDemographics public patientDemographics;
+    string public medicalHistory;
+    string public diagnosis;
+    string public medications;
+    string public allergies;
+    string public progressNotes;
+    string public vitalSigns;
+    string public immunizationDates;
+    string public emergency;
+    string[] public billingData;
+    string[] public radiologyImages;
+    string[] public labResults;
+    string[] public insurance;
+
+    mapping(address => bool) public doctorsAllowed;
+    
+    string public password;
+
+    constructor(string memory namee, string memory genderr, uint256 dobb, int mobilee, int aadharr, string memory paddresss, 
+    uint256 postalcodee, string memory countryy, string memory passwordd, address doctorsAddress) public {
+        
+        PatientDemographics memory dummy = PatientDemographics( { 
+            name: namee,
+            gender: genderr,
+            dob: dobb,
+            mobile: mobilee,
+            aadhar: aadharr,
+            paddress: paddresss,
+            postalcode: postalcodee,
+            country: countryy
+        });
+        
+        patientDemographics = dummy;
+        password = passwordd;
+        doctorsAllowed[doctorsAddress] = true;
+    }
+    
+    function addFiles(string memory billingDataa, string memory radiologyImagess, string memory labResultss, string memory insurancee, address doctorsAddress) public {
+        if(isDoctorAllowed()) {
+            if(!(keccak256(abi.encodePacked(billingDataa)) == keccak256(abi.encodePacked("")))) {
+                billingData.push(billingDataa);
+            }
+            if(!(keccak256(abi.encodePacked(radiologyImagess)) == keccak256(abi.encodePacked("")))) {
+                radiologyImages.push(radiologyImagess);
+            }
+            if(!(keccak256(abi.encodePacked(labResultss)) == keccak256(abi.encodePacked("")))) {
+                labResults.push(labResultss);
+            }
+            if(!(keccak256(abi.encodePacked(insurancee)) == keccak256(abi.encodePacked("")))) {
+                insurance.push(insurancee);
+            }
+        }
+    }
+    
+    function updateNondemographics(string memory medicalHistoryy, string memory diagnosiss, string memory medicationss,
+    string memory allergiess, string memory progressNotess, string memory vitalSignss, string memory immunizationDatess, 
+    string memory emergencyy, address doctorsAddress) public returns(bool) {
+        if(isDoctorAllowed()) {
+            medicalHistory = medicalHistoryy;
+            diagnosis = diagnosiss;
+            medications = medicationss;
+            allergies = allergiess;
+            progressNotes = progressNotess;
+            vitalSigns = vitalSignss;
+            immunizationDates = immunizationDatess;
+            emergency = emergencyy;
+            return true;
+        }else{
+            return false;
+        }
+    }
+    
+    function isDoctorAllowed() public view returns(bool) {
+        Doctor dc = Doctor(0x1b4Cdf3abAB7406e048BbB456D57DB1DF26eadB8);
+        if(dc.isDoctor(msg.sender)) {
+            if(doctorsAllowed[msg.sender] == true) {
+                return true;
+            }else {
+                return false;
+            }
+        }else {
+            return false;
+        }
+    }
+    
+    function isCorrectPassword(string memory pass) public view returns(bool) {
+        if(keccak256(abi.encodePacked(pass)) == keccak256(abi.encodePacked(password))) {
+            return true;
+        }else {
+            return false;
+        }
+    }
+    
+    function addDoctor(address doc, string memory pass) public returns(bool) {
+        if(keccak256(abi.encodePacked(pass)) == keccak256(abi.encodePacked(password))) {
+            doctorsAllowed[doc] = true;
+            return true;
+        }
+    }
+
+    function addBillingData(string memory billingDataa) public {
+        if(isDoctorAllowed()) {
+            billingData.push(billingDataa);
+        }
+    }
+    
+    function addRadiologyImages(string memory radiologyImagess) public {
+        if(isDoctorAllowed()) {
+            radiologyImages.push(radiologyImagess);
+        }
+    }
+
+    function addLabResults(string memory labResultss) public {
+        if(isDoctorAllowed()) {
+            labResults.push(labResultss);
+        }
+    }
+    
+    function addInsurance(string memory insurancee, string memory pass) public {
+        if(keccak256(abi.encodePacked(pass)) == keccak256(abi.encodePacked(password))) {
+            insurance.push(insurancee);
+        }
+    }
+}
+
+contract AddressMapping {
+    mapping(int => address) public mapRecord;
+    mapping(int => address) public mapInsurance;
+    mapping(address => address) public ownerMap;
+    mapping(address => bool) public ownerMapCheck;
+
+    constructor() public {
+        
+    }
+
+    function getRecordAddress(int aadhar) public view returns(address) {
+        return mapRecord[aadhar];
+
+    }
+
+    function setRecordAddress(int aadhar, address patient) public {
+        mapRecord[aadhar] = patient;
+    }
+    
+    function getInsuranceAddress(int insNum) public view returns(address) {
+        return mapInsurance[insNum];
+
+    }
+
+    function setInsuranceAddress(int insNum, address insurance) public {
+        mapInsurance[insNum] = insurance;
+    }
+    
+    function createOwner() public {
+        if(!ownerMapCheck[msg.sender]) {
+            ownerMap[msg.sender] = address(new Owner(msg.sender));
+            ownerMapCheck[msg.sender] = true;
+        }
+    }
+    
+    function getOwnerAddress() public view returns(address) {
+        return ownerMap[msg.sender];
+    }
+
+}
+
+contract Owner {
+    struct Request {
+        address ownerAdd;
+        address selfAdd;
+        string title;
+        string details;
+        bool doctor;
+        bool owner;
+        string bills;
+        uint256 index;
+        uint256 pendingRequestsIndex;
+    }
+    address public manager;
+    Request[] public pendingRequests;
+    Request[] public approvedRequests;
+    Request[] public rejectedRequests;
+    address[] public insuranceIssued;
+    int public requestsCount = -1;
+    constructor(address owner) public {
+        manager = owner;
+    }
+    
+    modifier restricted() {
+        require(msg.sender == manager);
+        _;
+    }
+    
+    function gerPendingRequestsCount() public view restricted returns(uint) {
+        return (getApprovedRequestsCount() - pendingRequests.length);
+    }
+    
+    function gerPendingRequests() public view restricted returns(Request[] memory) {
+        return pendingRequests;
+    }
+
+    function getApprovedRequestsCount() public view restricted returns(uint) {
+        return approvedRequests.length;
+    }
+    
+    function getRejectedRequestsCount() public view restricted returns(uint) {
+        return rejectedRequests.length;
+    }
+    
+    function getInsuranceIssuedCount() public view restricted returns(uint) {
+        return insuranceIssued.length;
+    }
+
+    function createInsurance(string memory name, string memory aadhar, int amount, string memory insDetailss, string memory documentss, int setInsuranceAddresss) public restricted {
+        address newInsurance = address(new Insurance(address(this), name, aadhar, amount, insDetailss, documentss));
+        insuranceIssued.push(newInsurance);
+        AddressMapping hh = AddressMapping(0xe593797E53ebF9Fb1499c6374bef480Ab01453F7);
+        hh.setInsuranceAddress(setInsuranceAddresss, newInsurance);
+    }
+
+    function pendingRequest(address ownerAddd, address selfAddd, string memory titlee, string memory detailss, string memory fileHash, bool doctorr, bool ownerrrr, uint256 index) public restricted {
+        Request memory newRequest = Request ( {
+            ownerAdd: ownerAddd,
+            selfAdd: selfAddd,
+            title: titlee,
+            details: detailss,
+            bills: fileHash,
+            doctor: doctorr,
+            owner: ownerrrr,
+            index: index,
+            pendingRequestsIndex: uint256(requestsCount + 1)
+        });
+        pendingRequests.push(newRequest);
+        requestsCount = requestsCount + 1;
+    }
+
+    function approveCancelRequest(uint256 index, bool flag) public restricted {
+        if(flag == true) {
+            Insurance inu = Insurance(address(pendingRequests[index].selfAdd));
+            inu.finalizeRequest(pendingRequests[index].index, true);
+            approvedRequests.push(pendingRequests[index]);
+            delete pendingRequests[index];
+        }
+        else {
+            Insurance inu = Insurance(address(pendingRequests[index].selfAdd));
+            inu.finalizeRequest(pendingRequests[index].index, false);
+            rejectedRequests.push(pendingRequests[index]);
+            delete pendingRequests[index];
+        }
+    }
+
+
+}
+
+contract Insurance {
+    struct Request {
+        address ownerAdd;
+        address selfAdd;
+        string title;
+        string details;
+        bool doctor;
+        bool owner;
+        string bills;
+        uint256 index;
+        bool finalize;
+        uint256 pendingRequestsIndex;
+    }
+
+    address public selfAddress;
+    address public ownerr;
+    string public name;
+    string public aadhar;
+    string public insDetails;
+    string public documents;
+    int public amount;
+    int public requestsCount = -1;
+    Request[] public requests;
+
+    constructor(address ownerrr, string memory namee, string memory aadharr, int amountt, string memory insDetailss, string memory documentss) public {
+        selfAddress = address(this);
+        ownerr = ownerrr;
+        name = namee;
+        insDetails = insDetailss;
+        documents = documentss;
+        aadhar = aadharr;
+        amount = amountt;
+    }
+
+    function applyClaim(string memory fileHash, string memory titlee, string memory detailss) public {
+        Request memory newRequest = Request( {
+            ownerAdd: ownerr,
+            selfAdd: address(this),
+            title: titlee,
+            details: detailss,
+            bills: fileHash,
+            doctor: true,
+            owner: false,
+            index: uint256(requestsCount + 1),
+            finalize: false,
+            pendingRequestsIndex: 0
+        });
+        requests.push(newRequest);
+        Owner oo = Owner(address(0xAd45ad159879D6EB9Efc6B691411Cd840f14ce1a));
+        oo.pendingRequest(ownerr, address(this), titlee, detailss, fileHash, true, false, uint256(requestsCount + 1));
+        requestsCount = requestsCount + 1;
+    }
+
+    function finalizeRequest(uint256 index, bool flag) public {
+        if(flag == true) {
+            requests[index].finalize = true;
+            requests[index].owner = true;
+        }
+        else {
+            requests[index].finalize = true;
+            requests[index].owner = false;
+        }
+    }
+}

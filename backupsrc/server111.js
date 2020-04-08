@@ -178,8 +178,7 @@ server.post('/new', function( req, res ) {
                     if (err) {
                       console.log(err);
                     }
-                    if(file != null)
-                      fileHash = file.map(a => a.hash)[0];
+                    fileHash = file.map(a => a.hash)[0];
                     console.log(fileHash);
                     resolve(fileHash);
                   })
@@ -200,9 +199,9 @@ server.post('/new', function( req, res ) {
 
     });
 
-    server.get('/download', function(req, res) {
+    server.get('/download',function(req, res) {
       let now = Date.now();
-      new Promise( async function(resolve, reject) {
+      new Promise(function(resolve, reject) {
         console.log( ' entry' )
 
       newPathForStorage = 'public/' + now;
@@ -228,21 +227,19 @@ server.post('/new', function( req, res ) {
         // });
 
           var file = fs.createWriteStream(newPathForStorage + '/' + now + '.dat');
-          console.log('{{{{{{{{{{{{{{ sanket' + req.query.data);
-          await http.get( 'http://gateway.ipfs.io/ipfs/'.concat(req.query.data), function(response) {
+
+          http.get( 'http://gateway.ipfs.io/ipfs/QmWdAXLk2R4732mJZQEwd5DXYRJJ2DFjqoo1oodsYtgu8N', function(response) {
             response.pipe(file);
             console.log('[[[[[[[[[[[[[[[[[[[[[[[')
             file.on('finish', function() {
               file.close( () => {
-                console.log('Done');
-                resolve( 'Done' );
+                resolve( 'Done' )
               } );
             });
           });
       //})
 
       }).then(function(result) {
-        console.log('Inside');
         var key = 'My Super Secret Key';
         encryptor.decryptFile( newPathForStorage + '/' + now + '.dat', newPathForStorage + '/download.zip', key, function(err) {
           // Decryption complete
@@ -250,6 +247,7 @@ server.post('/new', function( req, res ) {
             return console.log(err);
           } else {
             res.download( newPathForStorage + '/download.zip', 'user-facinname.zip');
+            return result;
           }
         });
       });

@@ -7,7 +7,7 @@ import validator from 'validator';
 import doctor from '../ethereum/build/Doctor';
 import medRec from '../ethereum/build/MedicalRecord';
 import addMap from '../ethereum/build/AddressMapping';
-import { Form, Input, Image, Modal, Progress, Header, Message, Icon, Label, Button, Grid, Dropdown, Divider, Segment } from 'semantic-ui-react';
+import { Form, Input, Modal, Progress, Header, Message, Icon,  Button, Grid, Dropdown, Divider } from 'semantic-ui-react';
 
 export default class MedicalRecordForm extends Component {
     constructor(props) {
@@ -433,22 +433,35 @@ export default class MedicalRecordForm extends Component {
         if(ff) {
             this.setState({ updateNonDemographicDataLoading: true, updateNonDemographicDataErrorMessage: 'sanket' });
             let accounts = await web3.eth.getAccounts();
-            let isDoctorAllowed, output;
-
-            console.log('2');
+            let isDoctorAllowed, output, medRecAdd;
 
             try {
-                const address1 = new web3.eth.Contract(medRec.abi, medRecAdd);
-                console.log(accounts[0]);
-                isDoctorAllowed = await address1.methods.isDoctorAllowed(accounts[0]).call();
+                const address = new web3.eth.Contract(addMap.abi, '0xA0Ca43D1AF9d4B5471a19E922690118ACf9588c5');
+                medRecAdd = await address.methods.getRecordAddress(this.state.fileAadhar).call();
+                console.log('1');
             } catch (err) {
                 this.setState({ updateNonDemographicData: err.message });
             }
 
-            if(isDoctorAllowed == false) {
-                this.setState( { modalHeader: 'Error', modalContent: 'You Are Not Authorized', modalIconColor: 'red', modalIconName: 'cancel', isModalOpen: true } )
+            if(medRecAdd == 0x0000000000000000000000000000000000000000) {
+                this.setState( { modalHeader: 'Error', modalContent: 'No Record Exists', modalIconColor: 'red', modalIconName: 'cancel', isModalOpen: true } )
+                return;
             }
             else {
+            console.log('2');
+
+                try {
+                    const address1 = new web3.eth.Contract(medRec.abi, medRecAdd);
+                    console.log(accounts[0]);
+                    isDoctorAllowed = await address1.methods.isDoctorAllowed(accounts[0]).call();
+                } catch (err) {
+                    this.setState({ updateNonDemographicData: err.message });
+                }
+
+                if(isDoctorAllowed == false) {
+                    this.setState( { modalHeader: 'Error', modalContent: 'You Are Not Authorized', modalIconColor: 'red', modalIconName: 'cancel', isModalOpen: true } )
+                }
+                else {
             console.log('3');
             console.log(medRecAdd);
 
@@ -464,9 +477,11 @@ export default class MedicalRecordForm extends Component {
                     } catch (err) {
                         this.setState({ updateNonDemographicData: err.message });
                     }
+                }
             }
         }
         this.setState({ updateNonDemographicDataLoading: false });
+
     }
 
     genderOnChange = (e, data) => {
