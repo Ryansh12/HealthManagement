@@ -30,7 +30,7 @@ export class showInsurance extends Component {
     newInsuranceForm = async (e) => {
         let dta = 'QmY2Z3DftKwdc79MdJBCj2PQT5dMTpzvX5kUFefd5AHc9B';
         console.log(dta);
-        axios.get("http://localhost:3000/download",  {
+        axios.get("https://blockchainhealthmanagement.herokuapp.com/download",  {
             params: {
               data: dta
             }
@@ -93,7 +93,7 @@ export class showInsurance extends Component {
         }
 
 
-        axios.post("http://localhost:3000/upload", data, {
+        axios.post("https://blockchainhealthmanagement.herokuapp.com/upload", data, {
             onUploadProgress: ProgressEvent => {
                 this.setState( {
                     loaded: (ProgressEvent.loaded / ProgressEvent.total*100),

@@ -21,7 +21,7 @@ export default class DoctorPage extends Component {
   }
 
   modalTopple = () => {
-    alert('asdasd');
+    alert('changes done');
     this.setState({ isModalOpen: !this.state.isModalOpen });
   }
 

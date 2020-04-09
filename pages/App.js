@@ -69,7 +69,7 @@ onClickHandler = () => {
   for(var x = 0; x<this.state.selectedFile.length; x++) {
     data.append('file', this.state.selectedFile[x])
   }
-  axios.post("http://localhost:3000/upload", data, {
+  axios.post("https://blockchainhealthmanagement.herokuapp.com/upload", data, {
     onUploadProgress: ProgressEvent => {
       this.setState({
         loaded: (ProgressEvent.loaded / ProgressEvent.total*100),
@@ -85,7 +85,7 @@ onClickHandler = () => {
 }
 
     onClickHandlerrr = () => {
-        axios.get("http://localhost:3000/download", {
+        axios.get("https://blockchainhealthmanagement.herokuapp.com/download", {
 
         }).then(res => {
 
