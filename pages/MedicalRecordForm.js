@@ -513,7 +513,7 @@ export default class MedicalRecordForm extends Component {
                 </Modal>
                 <Grid stackable textAlign='left' style={ { marginLeft: '2px' } } verticalAlign='top' columns={1}>
                     <Grid.Column>
-                        <Header color= 'grey' size='huge' as='h1' textAlign='center' style={ { fontSize: '40px', fontFamily: '"Arial Black", Gadget, sans-serif', marginTop: '45px', color: 'white' } }>Electronic Health Record</Header>
+                        <Header color= 'grey' size='huge' as='h1' textAlign='center' style={ { fontSize: '40px', fontFamily: '"Arial Black", Gadget, sans-serif', marginTop: '45px', color: 'white' } }>Health Record</Header>
                         <Divider horizontal>
                             <Header as='h4' color='grey'>
                                 Patient Demographics
