@@ -1,5 +1,1 @@
-node_modules/*
-.next/*
-public/*
-backupsrc/*
-ethereum/*
+node_modules
